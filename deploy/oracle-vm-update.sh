@@ -16,9 +16,8 @@ git pull
 echo "Installing dependencies..."
 npm install
 
-echo "Restarting bot with PM2..."
-npx pm2 restart atm
-npx pm2 save
+echo "Restarting bot with systemctl..."
+sudo systemctl restart atm
+sudo systemctl status atm
 
 echo "Done."
-npx pm2 list

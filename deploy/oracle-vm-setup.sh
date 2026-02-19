@@ -18,26 +18,23 @@ sudo apt upgrade -y
 echo "[2/8] Installing dependencies..."
 sudo apt install -y curl git ufw
 
-echo "[3/8] Installing Node.js 22.x..."
+echo "[3/7] Installing Node.js 22.x..."
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 
-echo "[4/8] Installing PM2 globally..."
-sudo npm install -g pm2
-
 if [[ -d "$APP_DIR/.git" ]]; then
-  echo "[5/8] Repo already exists at $APP_DIR, pulling latest..."
+  echo "[4/7] Repo already exists at $APP_DIR, pulling latest..."
   cd "$APP_DIR"
   git pull
 else
-  echo "[5/8] Cloning repository to $APP_DIR..."
+  echo "[4/7] Cloning repository to $APP_DIR..."
   sudo mkdir -p "$(dirname "$APP_DIR")"
   sudo git clone "$GITHUB_REPO_URL" "$APP_DIR"
   sudo chown -R "$APP_USER":"$APP_USER" "$APP_DIR"
   cd "$APP_DIR"
 fi
 
-echo "[6/8] Installing project dependencies..."
+echo "[5/7] Installing project dependencies..."
 npm install
 
 if [[ ! -f ".env" ]]; then
@@ -50,14 +47,19 @@ if [[ ! -f ".env" ]]; then
   fi
 fi
 
-echo "[7/8] Enabling firewall (SSH stays open)..."
+echo "[6/7] Setting up systemd service..."
+sudo cp "$APP_DIR/deploy/atm.service" /etc/systemd/system/atm.service
+sudo systemctl daemon-reload
+sudo systemctl enable atm
+sudo systemctl start atm
+
+echo "[7/7] Enabling firewall (SSH stays open)..."
 sudo ufw allow OpenSSH
 sudo ufw --force enable
 
-echo "[8/8] Setup complete. Next steps:"
+echo "Setup complete. Next steps:"
 echo "  cd $APP_DIR"
 echo "  nano .env      # set DISCORD_TOKEN"
-echo "  npm run bot:online"
-echo "  npm run bot:status"
-echo "  pm2 save"
-echo "  pm2 startup systemd -u $APP_USER --hp /home/$APP_USER"
+echo "  sudo systemctl restart atm"
+echo "  sudo systemctl status atm"
+echo "  sudo systemctl logs atm -f"

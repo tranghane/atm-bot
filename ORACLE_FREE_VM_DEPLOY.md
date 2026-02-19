@@ -61,26 +61,21 @@ Set:
 DISCORD_TOKEN=your_real_token_here
 ```
 
-Start and verify:
+The bot is automatically started by systemd. Check status:
 
 ```bash
-npm run bot:online
-npm run bot:status
-npm run bot:logs
+sudo systemctl status atm
 ```
 
-## 6) Make it survive reboot
-
-Run this on VM after bot is online:
+View live logs:
 
 ```bash
-pm2 save
-pm2 startup systemd -u ubuntu --hp /home/ubuntu
+sudo systemctl logs atm -f
 ```
 
-It will print another command. Copy-paste and run that command.
+## 6) Bot survives reboot automatically
 
-Then reboot test:
+systemd is already configured to auto-start the bot on reboot. Test it:
 
 ```bash
 sudo reboot
@@ -89,10 +84,10 @@ sudo reboot
 Reconnect and check:
 
 ```bash
-npx pm2 list
+sudo systemctl status atm
 ```
 
-You should see `atm` as `online`.
+Should show `active (running)`.
 
 ## 7) Update bot later
 

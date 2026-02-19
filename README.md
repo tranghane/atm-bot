@@ -6,15 +6,15 @@ A Discord bot foundation for expense tracking and budgeting.
 
 - Bot connects to Discord using `discord.js`
 - Replies `hello world` when a user sends `hello`
-- Runs in background with PM2
-- Includes Oracle Free VM deployment scripts
+- Includes Oracle Free VM deployment with systemd
+- Auto-restarts on crash, survives reboots
 
 ## Tech Stack
 
 - Node.js
 - discord.js
 - dotenv
-- PM2
+- systemd (production process manager)
 
 ## Project Structure
 
@@ -24,8 +24,8 @@ atm/
 │   └── bot.js
 ├── deploy/
 │   ├── oracle-vm-setup.sh
-│   └── oracle-vm-update.sh
-├── ecosystem.config.js
+│   ├── oracle-vm-update.sh
+│   └── atm.service
 ├── ORACLE_FREE_VM_DEPLOY.md
 ├── .env.example
 ├── .gitignore
@@ -59,38 +59,38 @@ Run bot (foreground):
 npm start
 ```
 
-## PM2 Commands (Background)
+## Local Development (Background)
 
-Start bot:
-
-```bash
-npm run bot:online
-```
-
-Check status:
+For local testing with background process, use PM2 manually:
 
 ```bash
-npm run bot:status
+# Install PM2 globally (optional)
+npm install -g pm2
+
+# Start bot in background
+pm2 start src/bot.js --name atm
+
+# Check status
+pm2 list
+
+# View logs
+pm2 logs atm
+
+# Stop
+pm2 stop atm
 ```
 
-View logs:
+Or just run in foreground:
 
 ```bash
-npm run bot:logs
+npm start
 ```
-
-Stop bot:
-
-```bash
-npm run bot:offline
-```
-
-## How the Bot Stays Online 24/7 (PM2 + Oracle)
+systemd + Oracle)
 
 ```
 ┌─────────────────────────────────────────┐
 │   Your PC (Development)                 │
-│   ├── Local bot with PM2                │
+│   ├── Local bot (npm start)             │
 │   └── Push code to GitHub               │
 └─────────────────┬───────────────────────┘
                   │ git push
@@ -104,7 +104,7 @@ npm run bot:offline
 ┌─────────────────────────────────────────┐
 │   Oracle Free VM (Production Server)    │
 │   ├── Ubuntu Linux (Always On)          │
-│   ├── Node.js + PM2                     │
+│   ├── Node.js + systemd                 │
 │   ├── Bot process running 24/7          │
 │   └── Public IP (Discord can reach it)  │
 └─────────────────────────────────────────┘
@@ -120,8 +120,9 @@ npm run bot:offline
 
 **How it works:**
 - **Oracle VM** = Free always-on Linux server (your PC is only for development).
-- **PM2** = Keeps your bot running, auto-restarts on crash.
+- **systemd** = Native Linux service manager, keeps your bot running, auto-restarts on crash, auto-starts on reboot.
 - **GitHub** = Sync code between your PC and the VM.
+- Develop locally → push to GitHub → pull on VM → systemd auto-manages process
 - Develop locally → push to GitHub → pull on VM → restart bot with PM2.
 
 ## Deployment (Oracle Free VM)
