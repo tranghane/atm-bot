@@ -1,0 +1,25 @@
+{
+  "name": "atm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/bot.js",
+  "scripts": {
+    "start": "node src/bot.js",
+    "bot:online": "npx pm2 start ecosystem.config.js",
+    "bot:offline": "npx pm2 stop atm && npx pm2 delete atm",
+    "bot:status": "npx pm2 list",
+    "bot:logs": "npx pm2 logs atm",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.3.1"
+  },
+  "devDependencies": {
+    "pm2": "^6.0.14"
+  }
+}
