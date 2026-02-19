@@ -87,16 +87,6 @@ npm run bot:offline
 
 ## How the Bot Stays Online 24/7 (PM2 + Oracle)
 
-Your bot needs a process running continuously and connected to Discord. Here's how it works:
-
-### Local Development (Your PC)
-
-- `npm start` or `npm run bot:online` runs the bot on your PC.
-- PM2 keeps it running in the background even if you close the terminal.
-- **Problem:** Bot goes offline when your PC shuts down/sleeps.
-
-### Production Deployment (Oracle Free VM)
-
 ```
 ┌─────────────────────────────────────────┐
 │   Your PC (Development)                 │
@@ -128,33 +118,11 @@ Your bot needs a process running continuously and connected to Discord. Here's h
 └─────────────────────────────────────────┘
 ```
 
-**Why this works:**
-
-1. **Oracle VM** = Free Linux computer in Oracle's data center (always powered on).
-2. **PM2** = Process manager that keeps your Node.js bot running.
-   - Auto-restarts bot if it crashes.
-   - Keeps bot alive even if terminal closes.
-   - Configured to start bot automatically when VM reboots.
-3. **Public IP** = The VM has an internet address, so Discord API can reach your bot anytime.
-4. **GitHub** = Acts as a central hub for your code.
-   - Develop locally on your PC.
-   - Push changes to GitHub.
-   - Pull latest code on the VM and restart bot.
-
-### Workflow Summary
-
-1. You write/edit bot code on your PC locally.
-2. Test locally with `npm run bot:online`.
-3. Push code to GitHub: `git push`.
-4. SSH into the Oracle VM.
-5. Pull latest code: `git pull`.
-6. Restart bot: `npm run bot:online`.
-7. Bot is now running on the VM with the new code.
-8. Your PC can shut down—bot stays online on the Oracle VM.
-
-### Key Advantage
-
-You get **always-on hosting for free** (Oracle Always Free tier). Your PC is only needed for development; the VM handles production.
+**How it works:**
+- **Oracle VM** = Free always-on Linux server (your PC is only for development).
+- **PM2** = Keeps your bot running, auto-restarts on crash.
+- **GitHub** = Sync code between your PC and the VM.
+- Develop locally → push to GitHub → pull on VM → restart bot with PM2.
 
 ## Deployment (Oracle Free VM)
 
