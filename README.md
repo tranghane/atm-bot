@@ -136,6 +136,52 @@ Follow:
 - Never commit real tokens to GitHub.
 - `.env` is ignored by `.gitignore`.
 
+## TODO
+
+### Phase 1: Slash Commands (Foundation)
+- [ ] Implement `/ping` command (test bot responsiveness)
+- [ ] Implement `/add-expense` command (user inputs amount + merchant)
+- [ ] Implement `/set-limit` command (user sets budget limits per category)
+- [ ] Implement `/stats` command (monthly spending summary)
+
+### Phase 2: Database & Storage
+- [ ] Choose database (PostgreSQL + Prisma recommended)
+- [ ] Design schema (User, Category, Expense tables)
+- [ ] Store expenses with timestamps
+- [ ] Track budget limits per user + category
+
+### Phase 3: Expense Parser
+- [ ] Regex parser for message formats:
+  - `12$ starbucks`
+  - `I spent 40 on groceries`
+  - `uber 18`
+- [ ] Extract amount and merchant name
+- [ ] Map to existing categories
+
+### Phase 4: AI Category Classification
+- [ ] Integrate LLM (Claude, GPT, etc.)
+- [ ] Auto-categorize expenses based on merchant + description
+- [ ] Prompt engineering for accuracy
+- [ ] Fallback to user-selected category if uncertain
+
+### Phase 5: Statistics & Analytics
+- [ ] Generate monthly spending breakdown
+- [ ] Calculate % per category
+- [ ] Show remaining budget per category
+- [ ] LLM-generated summaries (e.g., "You overspent on Food by 18%")
+
+### Phase 6: Web Dashboard
+- [ ] Split architecture: Discord Bot ↔ Express API ↔ Database
+- [ ] React frontend for analytics
+- [ ] Display spending trends and charts
+- [ ] Budget alerts and recommendations
+
+### Phase 7: Advanced AI Features (Optional)
+- [ ] Chatbot mode for budget questions
+- [ ] RAG (Retrieval Augmented Generation) with past expenses
+- [ ] AI emoji auto-reaction based on sentiment
+- [ ] Agents for complex workflows
+
 ## Roadmap
 
 - Slash commands (`/ping`, `/add-expense`, `/set-limit`, `/stats`)
