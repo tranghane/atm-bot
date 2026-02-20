@@ -1,69 +1,105 @@
+const fs = require('node:fs');
+const path = require('node:path');
+
 const DEFAULT_CATEGORY = 'uncategorized';
+const dataDirPath = path.join(__dirname, '..', '..', 'data');
+const dataFilePath = path.join(dataDirPath, 'finance-store.json');
 
-const store = {
-  expensesByUser: new Map(),
-  limitsByUser: new Map(),
-};
-
-function getUserExpenses(userId) {
-  if (!store.expensesByUser.has(userId)) {
-    store.expensesByUser.set(userId, []);
+function ensureStoreFile() {
+  if (!fs.existsSync(dataDirPath)) {
+    fs.mkdirSync(dataDirPath, { recursive: true });
   }
 
-  return store.expensesByUser.get(userId);
+  if (!fs.existsSync(dataFilePath)) {
+    const initialStore = { users: {} };
+    fs.writeFileSync(dataFilePath, JSON.stringify(initialStore, null, 2), 'utf8');
+  }
 }
 
-function getUserLimits(userId) {
-  if (!store.limitsByUser.has(userId)) {
-    store.limitsByUser.set(userId, new Map());
+function loadStore() {
+  ensureStoreFile();
+
+  try {
+    const fileContent = fs.readFileSync(dataFilePath, 'utf8');
+    const parsed = JSON.parse(fileContent);
+    if (!parsed.users || typeof parsed.users !== 'object') {
+      return { users: {} };
+    }
+
+    return parsed;
+  } catch (error) {
+    console.warn('Failed to load finance store. Reinitializing empty store.', error);
+    return { users: {} };
+  }
+}
+
+function saveStore(store) {
+  ensureStoreFile();
+  fs.writeFileSync(dataFilePath, JSON.stringify(store, null, 2), 'utf8');
+}
+
+function getOrCreateUserRecord(store, userId) {
+  if (!store.users[userId]) {
+    store.users[userId] = {
+      expenses: [],
+      limits: {},
+    };
   }
 
-  return store.limitsByUser.get(userId);
+  if (!Array.isArray(store.users[userId].expenses)) {
+    store.users[userId].expenses = [];
+  }
+
+  if (!store.users[userId].limits || typeof store.users[userId].limits !== 'object') {
+    store.users[userId].limits = {};
+  }
+
+  return store.users[userId];
 }
 
 function addExpense({ userId, amount, merchant, category }) {
+  const store = loadStore();
+  const userRecord = getOrCreateUserRecord(store, userId);
   const normalizedCategory = (category || DEFAULT_CATEGORY).trim().toLowerCase();
-  const expenses = getUserExpenses(userId);
 
-  expenses.push({
+  userRecord.expenses.push({
     amount,
     merchant: merchant.trim(),
     category: normalizedCategory,
-    date: new Date(),
+    date: new Date().toISOString(),
   });
+
+  saveStore(store);
 
   return { category: normalizedCategory };
 }
 
 function setCategoryLimit({ userId, category, limit }) {
+  const store = loadStore();
+  const userRecord = getOrCreateUserRecord(store, userId);
   const normalizedCategory = category.trim().toLowerCase();
-  const limits = getUserLimits(userId);
-  limits.set(normalizedCategory, limit);
+  userRecord.limits[normalizedCategory] = limit;
+  saveStore(store);
   return normalizedCategory;
 }
 
-function getMonthlyStats(userId) {
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+function getStats(userId) {
+  const store = loadStore();
+  const userRecord = getOrCreateUserRecord(store, userId);
+  const allExpenses = userRecord.expenses;
 
-  const monthlyExpenses = getUserExpenses(userId).filter((expense) => {
-    const expenseDate = new Date(expense.date);
-    return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
-  });
-
-  const totalSpent = monthlyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalSpent = allExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 
   const byCategory = new Map();
-  for (const expense of monthlyExpenses) {
+  for (const expense of allExpenses) {
     const current = byCategory.get(expense.category) || 0;
     byCategory.set(expense.category, current + expense.amount);
   }
 
-  const limits = getUserLimits(userId);
+  const limits = userRecord.limits;
 
   const categoryRows = Array.from(byCategory.entries()).map(([category, spent]) => {
-    const limit = limits.get(category);
+    const limit = typeof limits[category] === 'number' ? limits[category] : null;
     const remaining = typeof limit === 'number' ? limit - spent : null;
 
     return {
@@ -77,14 +113,20 @@ function getMonthlyStats(userId) {
 
   return {
     totalSpent,
-    transactionCount: monthlyExpenses.length,
+    transactionCount: allExpenses.length,
     categoryRows,
   };
+}
+
+function clearStoreFile() {
+  const emptyStore = { users: {} };
+  saveStore(emptyStore);
 }
 
 module.exports = {
   DEFAULT_CATEGORY,
   addExpense,
   setCategoryLimit,
-  getMonthlyStats,
+  getStats,
+  clearStoreFile,
 };

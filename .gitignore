@@ -15,6 +15,7 @@ pnpm-debug.log*
 dist/
 build/
 coverage/
+data/
 
 # Runtime/process files
 .pm2/

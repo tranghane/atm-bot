@@ -6,7 +6,7 @@ Discord bot foundation for expense tracking and budgeting.
 
 - Slash command architecture implemented
 - Commands available: `/ping`, `/add-expense`, `/set-limit`, `/stats`
-- Temporary in-memory store for limits and expenses (MVP)
+- JSON file-backed store for limits and expenses (MVP)
 - Deployed option available via Oracle VM + systemd
 
 ## Tech Stack
@@ -86,8 +86,9 @@ npm start
 
 - `/ping` → health check
 - `/add-expense amount merchant [category]` → add expense
-- `/set-limit category limit` → set monthly category limit
-- `/stats` → monthly summary from stored entries
+- `/set-limit category limit` → set category spending limit
+- `/stats` → show amount used and remaining against limits
+- `/clear-data confirm:true` → clear the local JSON data file
 
 ## Deployment
 
@@ -105,6 +106,7 @@ npm start
 - [x] Implement `/add-expense` command
 - [x] Implement `/set-limit` command
 - [x] Implement `/stats` command
+- [x] Implement `/clear-data` command
 - [x] Add command registration script
 - [x] Organize code into commands/services/utils modules
 

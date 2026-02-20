@@ -4,13 +4,13 @@ const financeStore = require('../services/financeStore');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('stats')
-    .setDescription('Show your current month spending stats'),
+    .setDescription('Show your spending stats'),
 
   async execute(interaction) {
-    const stats = financeStore.getMonthlyStats(interaction.user.id);
+    const stats = financeStore.getStats(interaction.user.id);
 
     if (stats.transactionCount === 0) {
-      await interaction.reply('No expenses recorded this month yet.');
+      await interaction.reply('No expenses recorded yet.');
       return;
     }
 
@@ -24,7 +24,7 @@ module.exports = {
       .join('\n');
 
     await interaction.reply(
-      `This month:\nTotal: $${stats.totalSpent.toFixed(2)}\nTransactions: ${stats.transactionCount}\n\n${categoryLines}`
+      `Summary:\nTotal: $${stats.totalSpent.toFixed(2)}\nTransactions: ${stats.transactionCount}\n\n${categoryLines}`
     );
   },
 };

@@ -14,7 +14,7 @@ module.exports = {
     .addNumberOption((option) =>
       option
         .setName('limit')
-        .setDescription('Monthly limit amount')
+        .setDescription('Limit amount')
         .setRequired(true)
         .setMinValue(0.01)
     ),
@@ -29,6 +29,6 @@ module.exports = {
       limit,
     });
 
-    await interaction.reply(`Set monthly limit for ${normalizedCategory} to $${limit.toFixed(2)}`);
+    await interaction.reply(`Set spending limit for ${normalizedCategory} to $${limit.toFixed(2)}`);
   },
 };
