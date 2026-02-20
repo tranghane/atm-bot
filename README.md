@@ -1,13 +1,13 @@
 # atm
 
-A Discord bot foundation for expense tracking and budgeting.
+Discord bot foundation for expense tracking and budgeting.
 
 ## Current Status
 
-- Bot connects to Discord using `discord.js`
-- Replies `hello world` when a user sends `hello`
-- Includes Oracle Free VM deployment with systemd
-- Auto-restarts on crash, survives reboots
+- Slash command architecture implemented
+- Commands available: `/ping`, `/add-expense`, `/set-limit`, `/stats`
+- Temporary in-memory store for limits and expenses (MVP)
+- Deployed option available via Oracle VM + systemd
 
 ## Tech Stack
 
@@ -21,11 +21,22 @@ A Discord bot foundation for expense tracking and budgeting.
 ```text
 atm/
 ├── src/
-│   └── bot.js
+│   ├── bot.js
+│   ├── commands/
+│   │   ├── add-expense.js
+│   │   ├── ping.js
+│   │   ├── set-limit.js
+│   │   └── stats.js
+│   ├── scripts/
+│   │   └── registerCommands.js
+│   ├── services/
+│   │   └── financeStore.js
+│   └── utils/
+│       └── commandLoader.js
 ├── deploy/
+│   ├── atm.service
 │   ├── oracle-vm-setup.sh
-│   ├── oracle-vm-update.sh
-│   └── atm.service
+│   └── oracle-vm-update.sh
 ├── ORACLE_FREE_VM_DEPLOY.md
 ├── .env.example
 ├── .gitignore
@@ -35,15 +46,21 @@ atm/
 ## Prerequisites
 
 - Node.js 18+ (22 recommended)
-- Discord bot token in `.env`
+- Discord app and bot token
 
 ## Environment Variables
 
-Create `.env` in the project root:
+Create `.env` in project root:
 
 ```env
 DISCORD_TOKEN=your_token_here
+DISCORD_APP_ID=your_application_id_here
+DISCORD_TEST_SERVER_ID=optional_test_server_id
 ```
+
+Notes:
+- `DISCORD_TEST_SERVER_ID` is optional but recommended during development for instant slash command updates.
+- If `DISCORD_TEST_SERVER_ID` is omitted, commands are registered globally (can take longer to appear).
 
 ## Local Development
 
@@ -53,83 +70,28 @@ Install dependencies:
 npm install
 ```
 
-Run bot (foreground):
+Register slash commands:
+
+```bash
+npm run commands:register
+```
+
+Run bot:
 
 ```bash
 npm start
 ```
 
-## Local Development (Background)
+## Slash Commands (Phase 1)
 
-For local testing with background process, use PM2 manually:
+- `/ping` → health check
+- `/add-expense amount merchant [category]` → add expense
+- `/set-limit category limit` → set monthly category limit
+- `/stats` → monthly summary from stored entries
 
-```bash
-# Install PM2 globally (optional)
-npm install -g pm2
+## Deployment
 
-# Start bot in background
-pm2 start src/bot.js --name atm
-
-# Check status
-pm2 list
-
-# View logs
-pm2 logs atm
-
-# Stop
-pm2 stop atm
-```
-
-Or just run in foreground:
-
-```bash
-npm start
-```
-systemd + Oracle)
-
-```
-┌─────────────────────────────────────────┐
-│   Your PC (Development)                 │
-│   ├── Local bot (npm start)             │
-│   └── Push code to GitHub               │
-└─────────────────┬───────────────────────┘
-                  │ git push
-                  ▼
-┌─────────────────────────────────────────┐
-│   GitHub (Code Repository)              │
-│   └── Central storage for your bot code │
-└─────────────────┬───────────────────────┘
-                  │ git clone / git pull
-                  ▼
-┌─────────────────────────────────────────┐
-│   Oracle Free VM (Production Server)    │
-│   ├── Ubuntu Linux (Always On)          │
-│   ├── Node.js + systemd                 │
-│   ├── Bot process running 24/7          │
-│   └── Public IP (Discord can reach it)  │
-└─────────────────────────────────────────┘
-                  │
-                  │ Connected to Discord API
-                  ▼
-┌─────────────────────────────────────────┐
-│   Discord                               │
-│   ├── Listens to bot commands           │
-│   └── Sends messages to bot             │
-└─────────────────────────────────────────┘
-```
-
-**How it works:**
-- **Oracle VM** = Free always-on Linux server (your PC is only for development).
-- **systemd** = Native Linux service manager, keeps your bot running, auto-restarts on crash, auto-starts on reboot.
-- **GitHub** = Sync code between your PC and the VM.
-- Develop locally → push to GitHub → pull on VM → systemd auto-manages process
-- Develop locally → push to GitHub → pull on VM → restart bot with PM2.
-
-## Deployment (Oracle Free VM)
-
-Follow:
-
-- `ORACLE_FREE_VM_DEPLOY.md`
+- Oracle VM setup guide: `ORACLE_FREE_VM_DEPLOY.md`
 
 ## Security Notes
 
@@ -139,52 +101,36 @@ Follow:
 ## TODO
 
 ### Phase 1: Slash Commands (Foundation)
-- [ ] Implement `/ping` command (test bot responsiveness)
-- [ ] Implement `/add-expense` command (user inputs amount + merchant)
-- [ ] Implement `/set-limit` command (user sets budget limits per category)
-- [ ] Implement `/stats` command (monthly spending summary)
+- [x] Implement `/ping` command
+- [x] Implement `/add-expense` command
+- [x] Implement `/set-limit` command
+- [x] Implement `/stats` command
+- [x] Add command registration script
+- [x] Organize code into commands/services/utils modules
 
 ### Phase 2: Database & Storage
 - [ ] Choose database (PostgreSQL + Prisma recommended)
 - [ ] Design schema (User, Category, Expense tables)
-- [ ] Store expenses with timestamps
-- [ ] Track budget limits per user + category
+- [ ] Persist expenses and limits in database
 
 ### Phase 3: Expense Parser
-- [ ] Regex parser for message formats:
-  - `12$ starbucks`
-  - `I spent 40 on groceries`
-  - `uber 18`
+- [ ] Parse message formats (`12$ starbucks`, `I spent 40 on groceries`, `uber 18`)
 - [ ] Extract amount and merchant name
 - [ ] Map to existing categories
 
 ### Phase 4: AI Category Classification
-- [ ] Integrate LLM (Claude, GPT, etc.)
-- [ ] Auto-categorize expenses based on merchant + description
-- [ ] Prompt engineering for accuracy
-- [ ] Fallback to user-selected category if uncertain
+- [ ] Integrate LLM for category suggestions
+- [ ] Add fallback flow for uncertain classifications
 
 ### Phase 5: Statistics & Analytics
-- [ ] Generate monthly spending breakdown
-- [ ] Calculate % per category
-- [ ] Show remaining budget per category
-- [ ] LLM-generated summaries (e.g., "You overspent on Food by 18%")
+- [ ] Expand monthly analytics and budget alerts
+- [ ] Add narrative summary generation
 
 ### Phase 6: Web Dashboard
-- [ ] Split architecture: Discord Bot ↔ Express API ↔ Database
-- [ ] React frontend for analytics
-- [ ] Display spending trends and charts
-- [ ] Budget alerts and recommendations
+- [ ] Build API layer
+- [ ] Build React dashboard
 
 ### Phase 7: Advanced AI Features (Optional)
 - [ ] Chatbot mode for budget questions
-- [ ] RAG (Retrieval Augmented Generation) with past expenses
-- [ ] AI emoji auto-reaction based on sentiment
-- [ ] Agents for complex workflows
-
-## Roadmap
-
-- Slash commands (`/ping`, `/add-expense`, `/set-limit`, `/stats`)
-- Expense parser (regex + AI category classification)
-- Monthly statistics and budget summaries
-- Web dashboard
+- [ ] RAG with historical expenses
+- [ ] AI emoji auto-reaction

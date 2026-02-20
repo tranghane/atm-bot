@@ -23,3 +23,6 @@ coverage/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Local chat/session notes
+copilot.md

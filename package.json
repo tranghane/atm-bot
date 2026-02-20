@@ -5,6 +5,7 @@
   "main": "src/bot.js",
   "scripts": {
     "start": "node src/bot.js",
+    "commands:register": "node src/scripts/registerCommands.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
