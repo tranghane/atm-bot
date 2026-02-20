@@ -1,0 +1,7 @@
+/ping
+/add-expense amount:12 merchant:starbucks
+/add-expense amount:12 merchant:starbucks category:food
+/set-limit category:food limit:100
+/stats
+/clear-data confirm:true
+/stats
