@@ -7,7 +7,7 @@ module.exports = {
     .setDescription('Show your spending stats'),
 
   async execute(interaction) {
-    const stats = financeStore.getStats(interaction.user.id);
+    const stats = await financeStore.getStats(interaction.user.id);
 
     if (stats.transactionCount === 0) {
       await interaction.reply('No expenses recorded yet.');

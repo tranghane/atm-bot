@@ -30,7 +30,7 @@ module.exports = {
     const merchant = interaction.options.getString('merchant');
     const category = interaction.options.getString('category');
 
-    const result = financeStore.addExpense({
+    const result = await financeStore.addExpense({
       userId: interaction.user.id,
       amount,
       merchant,

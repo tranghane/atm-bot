@@ -6,7 +6,7 @@ Discord bot foundation for expense tracking and budgeting.
 
 - Slash command architecture implemented
 - Commands available: `/ping`, `/add-expense`, `/set-limit`, `/stats`
-- JSON file-backed store for limits and expenses (MVP)
+- PostgreSQL-backed store via Prisma (Phase 2)
 - Deployed option available via Oracle VM + systemd
 
 ## Tech Stack
@@ -14,6 +14,8 @@ Discord bot foundation for expense tracking and budgeting.
 - Node.js
 - discord.js
 - dotenv
+- Prisma
+- PostgreSQL
 - systemd (production process manager)
 
 ## Project Structure
@@ -33,6 +35,8 @@ atm/
 │   │   └── financeStore.js
 │   └── utils/
 │       └── commandLoader.js
+├── prisma/
+│   └── schema.prisma
 ├── deploy/
 │   ├── atm.service
 │   ├── oracle-vm-setup.sh
@@ -76,6 +80,18 @@ Register slash commands:
 npm run commands:register
 ```
 
+Generate Prisma client:
+
+```bash
+npm run prisma:generate
+```
+
+Run Prisma migration (requires DATABASE_URL):
+
+```bash
+npm run prisma:migrate -- --name init
+```
+
 Run bot:
 
 ```bash
@@ -88,7 +104,7 @@ npm start
 - `/add-expense amount merchant [category]` → add expense
 - `/set-limit category limit` → set category spending limit
 - `/stats` → show amount used and remaining against limits
-- `/clear-data confirm:true` → clear the local JSON data file
+- `/clear-data confirm:true` → clear your limits and expense history in the database
 
 ## Deployment
 

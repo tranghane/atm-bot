@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node src/bot.js",
     "commands:register": "node src/scripts/registerCommands.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -13,8 +16,11 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@prisma/client": "^6.15.0",
     "discord.js": "^14.25.1",
     "dotenv": "^17.3.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "prisma": "^6.15.0"
+  }
 }

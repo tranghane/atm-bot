@@ -20,7 +20,7 @@ module.exports = {
       return;
     }
 
-    financeStore.clearStoreFile();
-    await interaction.reply('Local finance JSON file cleared: all limits and expense history were reset.');
+    await financeStore.clearStoreFile(interaction.user.id);
+    await interaction.reply('Your limits and expense history were cleared from the database.');
   },
 };

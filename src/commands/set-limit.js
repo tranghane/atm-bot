@@ -23,7 +23,7 @@ module.exports = {
     const category = interaction.options.getString('category');
     const limit = interaction.options.getNumber('limit');
 
-    const normalizedCategory = financeStore.setCategoryLimit({
+    const normalizedCategory = await financeStore.setCategoryLimit({
       userId: interaction.user.id,
       category,
       limit,

@@ -1,105 +1,118 @@
-const fs = require('node:fs');
-const path = require('node:path');
+const prisma = require('../lib/prisma');
 
 const DEFAULT_CATEGORY = 'uncategorized';
-const dataDirPath = path.join(__dirname, '..', '..', 'data');
-const dataFilePath = path.join(dataDirPath, 'finance-store.json');
-
-function ensureStoreFile() {
-  if (!fs.existsSync(dataDirPath)) {
-    fs.mkdirSync(dataDirPath, { recursive: true });
-  }
-
-  if (!fs.existsSync(dataFilePath)) {
-    const initialStore = { users: {} };
-    fs.writeFileSync(dataFilePath, JSON.stringify(initialStore, null, 2), 'utf8');
-  }
-}
-
-function loadStore() {
-  ensureStoreFile();
-
-  try {
-    const fileContent = fs.readFileSync(dataFilePath, 'utf8');
-    const parsed = JSON.parse(fileContent);
-    if (!parsed.users || typeof parsed.users !== 'object') {
-      return { users: {} };
-    }
-
-    return parsed;
-  } catch (error) {
-    console.warn('Failed to load finance store. Reinitializing empty store.', error);
-    return { users: {} };
-  }
-}
-
-function saveStore(store) {
-  ensureStoreFile();
-  fs.writeFileSync(dataFilePath, JSON.stringify(store, null, 2), 'utf8');
-}
-
-function getOrCreateUserRecord(store, userId) {
-  if (!store.users[userId]) {
-    store.users[userId] = {
-      expenses: [],
-      limits: {},
-    };
-  }
-
-  if (!Array.isArray(store.users[userId].expenses)) {
-    store.users[userId].expenses = [];
-  }
-
-  if (!store.users[userId].limits || typeof store.users[userId].limits !== 'object') {
-    store.users[userId].limits = {};
-  }
-
-  return store.users[userId];
-}
-
-function addExpense({ userId, amount, merchant, category }) {
-  const store = loadStore();
-  const userRecord = getOrCreateUserRecord(store, userId);
-  const normalizedCategory = (category || DEFAULT_CATEGORY).trim().toLowerCase();
-
-  userRecord.expenses.push({
-    amount,
-    merchant: merchant.trim(),
-    category: normalizedCategory,
-    date: new Date().toISOString(),
+async function getOrCreateUser(discordUserId) {
+  return prisma.user.upsert({
+    where: { discordUserId },
+    update: {},
+    create: { discordUserId },
   });
+}
 
-  saveStore(store);
+async function getOrCreateCategory(userId, categoryName) {
+  return prisma.category.upsert({
+    where: {
+      userId_name: {
+        userId,
+        name: categoryName,
+      },
+    },
+    update: {},
+    create: {
+      userId,
+      name: categoryName,
+    },
+  });
+}
+
+async function addExpense({ userId, amount, merchant, category }) {
+  const user = await getOrCreateUser(userId);
+  const normalizedCategory = (category || DEFAULT_CATEGORY).trim().toLowerCase();
+  const categoryRecord = await getOrCreateCategory(user.id, normalizedCategory);
+
+  await prisma.expense.create({
+    data: {
+      userId: user.id,
+      categoryId: categoryRecord.id,
+      amount,
+      merchant: merchant.trim(),
+    },
+  });
 
   return { category: normalizedCategory };
 }
 
-function setCategoryLimit({ userId, category, limit }) {
-  const store = loadStore();
-  const userRecord = getOrCreateUserRecord(store, userId);
+async function setCategoryLimit({ userId, category, limit }) {
+  const user = await getOrCreateUser(userId);
   const normalizedCategory = category.trim().toLowerCase();
-  userRecord.limits[normalizedCategory] = limit;
-  saveStore(store);
+  const categoryRecord = await getOrCreateCategory(user.id, normalizedCategory);
+
+  await prisma.categoryLimit.upsert({
+    where: {
+      userId_categoryId: {
+        userId: user.id,
+        categoryId: categoryRecord.id,
+      },
+    },
+    update: {
+      amount: limit,
+    },
+    create: {
+      userId: user.id,
+      categoryId: categoryRecord.id,
+      amount: limit,
+    },
+  });
+
   return normalizedCategory;
 }
 
-function getStats(userId) {
-  const store = loadStore();
-  const userRecord = getOrCreateUserRecord(store, userId);
-  const allExpenses = userRecord.expenses;
+async function getStats(userId) {
+  const user = await prisma.user.findUnique({
+    where: { discordUserId: userId },
+  });
 
-  const totalSpent = allExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-
-  const byCategory = new Map();
-  for (const expense of allExpenses) {
-    const current = byCategory.get(expense.category) || 0;
-    byCategory.set(expense.category, current + expense.amount);
+  if (!user) {
+    return {
+      totalSpent: 0,
+      transactionCount: 0,
+      categoryRows: [],
+    };
   }
 
-  const limits = userRecord.limits;
+  const [expenses, limits] = await Promise.all([
+    prisma.expense.findMany({
+      where: { userId: user.id },
+      include: { category: true },
+    }),
+    prisma.categoryLimit.findMany({
+      where: { userId: user.id },
+      include: { category: true },
+    }),
+  ]);
+
+  const totalSpent = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
+
+  const byCategory = new Map();
+  for (const expense of expenses) {
+    const categoryName = expense.category?.name || DEFAULT_CATEGORY;
+    const current = byCategory.get(categoryName) || 0;
+    byCategory.set(categoryName, current + Number(expense.amount));
+  }
+
+  const limitsByCategory = new Map();
+  for (const limitRecord of limits) {
+    limitsByCategory.set(limitRecord.category.name, Number(limitRecord.amount));
+  }
+
+  for (const [categoryName, limitAmount] of limitsByCategory.entries()) {
+    if (!byCategory.has(categoryName)) {
+      byCategory.set(categoryName, 0);
+    }
+  }
 
   const categoryRows = Array.from(byCategory.entries()).map(([category, spent]) => {
-    const limit = typeof limits[category] === 'number' ? limits[category] : null;
+    const limit = limitsByCategory.has(category) ? limitsByCategory.get(category) : null;
     const remaining = typeof limit === 'number' ? limit - spent : null;
 
     return {
@@ -113,14 +126,25 @@ function getStats(userId) {
 
   return {
     totalSpent,
-    transactionCount: allExpenses.length,
+    transactionCount: expenses.length,
     categoryRows,
   };
 }
 
-function clearStoreFile() {
-  const emptyStore = { users: {} };
-  saveStore(emptyStore);
+async function clearStoreFile(userId) {
+  const user = await prisma.user.findUnique({
+    where: { discordUserId: userId },
+  });
+
+  if (!user) {
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.expense.deleteMany({ where: { userId: user.id } }),
+    prisma.categoryLimit.deleteMany({ where: { userId: user.id } }),
+    prisma.category.deleteMany({ where: { userId: user.id } }),
+  ]);
 }
 
 module.exports = {
