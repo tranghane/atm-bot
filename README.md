@@ -11,6 +11,7 @@ Discord bot foundation for expense tracking and budgeting.
 
 ## Tech Stack
 
+
 - Node.js
 - discord.js
 - dotenv
