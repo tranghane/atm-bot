@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: atm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: atm_local
+      POSTGRES_USER: atm_local_user
+      POSTGRES_PASSWORD: atm_local_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
