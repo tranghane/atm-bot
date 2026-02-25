@@ -61,6 +61,7 @@ Create `.env` in project root:
 DISCORD_TOKEN=your_token_here
 DISCORD_APP_ID=your_application_id_here
 DISCORD_TEST_SERVER_ID=optional_test_server_id
+DATABASE_URL=postgresql://username:password@localhost:5432/atm?schema=public
 ```
 
 Notes:
@@ -99,6 +100,47 @@ Run bot:
 npm start
 ```
 
+## Phase 2 Notes (Complete)
+
+- Storage migrated from local JSON file (`data/finance-store.json`) to PostgreSQL.
+- Prisma is now the data-access layer used by `src/services/financeStore.js`.
+- Existing command behavior is unchanged from a user perspective, but all data now persists in DB tables.
+
+## Current Database Schema (Basic)
+
+- `User`
+	- Primary key: `id`
+	- Unique field: `discordUserId`
+	- Relationship: one user has many categories, limits, and expenses.
+- `Category`
+	- Primary key: `id`
+	- Foreign key: `userId -> User.id`
+	- Constraint: unique pair `(userId, name)`.
+- `CategoryLimit`
+	- Primary key: `id`
+	- Foreign keys: `userId -> User.id`, `categoryId -> Category.id`
+	- Constraint: unique pair `(userId, categoryId)`.
+- `Expense`
+	- Primary key: `id`
+	- Foreign keys: `userId -> User.id`, `categoryId -> Category.id` (optional)
+	- Stores amount, merchant, timestamps.
+
+## Prisma Studio (Database UI)
+
+- Run Prisma Studio on the machine where your app/database are reachable:
+
+```bash
+npx prisma studio --port 5555
+```
+
+- If running on a remote VM, use an SSH tunnel from your local machine:
+
+```bash
+ssh -i "<path-to-private-key>" -L 5555:localhost:5555 <vm-user>@<vm-public-ip>
+```
+
+- Then open in browser: `http://localhost:5555`
+
 ## Slash Commands (Phase 1)
 
 - `/ping` → health check
@@ -128,9 +170,9 @@ npm start
 - [x] Organize code into commands/services/utils modules
 
 ### Phase 2: Database & Storage
-- [ ] Choose database (PostgreSQL + Prisma recommended)
-- [ ] Design schema (User, Category, Expense tables)
-- [ ] Persist expenses and limits in database
+- [x] Choose database (PostgreSQL + Prisma)
+- [x] Design schema (User, Category, CategoryLimit, Expense)
+- [x] Persist expenses and limits in database
 
 ### Phase 3: Expense Parser
 - [ ] Parse message formats (`12$ starbucks`, `I spent 40 on groceries`, `uber 18`)
