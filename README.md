@@ -61,12 +61,14 @@ Create `.env` in project root:
 DISCORD_TOKEN=your_token_here
 DISCORD_APP_ID=your_application_id_here
 DISCORD_TEST_SERVER_ID=optional_test_server_id
+DISCORD_EXPENSE_CHANNEL_IDS=comma_separated_channel_ids
 DATABASE_URL=postgresql://username:password@localhost:5432/atm?schema=public
 ```
 
 Notes:
 - `DISCORD_TEST_SERVER_ID` is optional but recommended during development for instant slash command updates.
 - If `DISCORD_TEST_SERVER_ID` is omitted, commands are registered globally (can take longer to appear).
+- `DISCORD_EXPENSE_CHANNEL_IDS` controls which channels are monitored for expense-text intake (comma-separated channel IDs).
 
 ## Local Development
 
@@ -175,9 +177,10 @@ ssh -i "<path-to-private-key>" -L 5555:localhost:5555 <vm-user>@<vm-public-ip>
 - [x] Persist expenses and limits in database
 
 ### Phase 3: Expense Parser
-- [ ] Parse message formats (`12$ starbucks`, `I spent 40 on groceries`, `uber 18`)
-- [ ] Extract amount and merchant name
-- [ ] Map to existing categories
+- [x] Parse message formats (`12$ starbucks`, `I spent 40 on groceries`, `uber 18`)
+- [ ] Find a suitable dataset for transaction/expense text modeling
+- [ ] Train/evaluate a model for amount + merchant extraction
+- [ ] Use the model to map transactions to existing categories
 
 ### Phase 4: AI Category Classification
 - [ ] Integrate LLM for category suggestions

@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const { loadCommands } = require('./utils/commandLoader');
+const { isExpenseCandidate } = require('./parsers/isExpenseCandidate');
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -50,9 +51,11 @@ client.on('interactionCreate', async (interaction) => {
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
-  if (message.content.toLowerCase() === 'hello') {
-    await message.reply('hello world');
-  }
+  if (message.content.trim().startsWith('/')) return;
+
+  const expenseCandidate = isExpenseCandidate(message.content);
+  const resultText = expenseCandidate ? 'is an expense' : 'is not an expense';
+  await message.reply(`${message.content} ${resultText}`);
 });
 
 client.login(token);
