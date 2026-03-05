@@ -178,9 +178,14 @@ ssh -i "<path-to-private-key>" -L 5555:localhost:5555 <vm-user>@<vm-public-ip>
 
 ### Phase 3: Expense Parser
 - [x] Parse message formats (`12$ starbucks`, `I spent 40 on groceries`, `uber 18`)
-- [ ] Find a suitable dataset for transaction/expense text modeling
-- [ ] Train/evaluate a model for amount + merchant extraction
-- [ ] Use the model to map transactions to existing categories
+- [x] Choose dataset for category modeling: [mitulshah/transaction-categorization](https://huggingface.co/datasets/mitulshah/transaction-categorization)
+- [ ] Build training dataset from `expense_text` + dataset category labels
+- [ ] Start with a simple baseline classifier (use dataset categories as-is)
+- [ ] Evaluate on holdout split (accuracy + macro F1) and save model artifacts
+- [ ] Add inference helper: `categorizeExpenseText(expenseText)`
+- [ ] Wire parser flow to call classifier and return predicted category + confidence
+- [ ] Add fallback behavior when confidence is low (`uncategorized`)
+- [ ] Log prediction outcomes to prepare future fine-tuning
 
 ### Phase 4: AI Category Classification
 - [ ] Integrate LLM for category suggestions

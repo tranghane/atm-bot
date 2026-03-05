@@ -1,7 +1,20 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const { loadCommands } = require('./utils/commandLoader');
-const { isExpenseCandidate } = require('./parsers/isExpenseCandidate');
+const { parseExpenseCandidate } = require('./parsers/isExpenseCandidate');
+
+const allowedExpenseChannelIds = new Set(
+  (process.env.DISCORD_EXPENSE_CHANNEL_IDS || '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean),
+);
+
+function isAllowedExpenseChannel(channelId) {
+  if (!channelId) return false;
+  if (allowedExpenseChannelIds.size === 0) return true;
+  return allowedExpenseChannelIds.has(channelId);
+}
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -50,12 +63,26 @@ client.on('interactionCreate', async (interaction) => {
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
+  if (!isAllowedExpenseChannel(message.channelId)) return;
 
-  if (message.content.trim().startsWith('/')) return;
+  const text = message.content.trim();
+  if (!text || text.startsWith('/')) return;
 
-  const expenseCandidate = isExpenseCandidate(message.content);
-  const resultText = expenseCandidate ? 'is an expense' : 'is not an expense';
-  await message.reply(`${message.content} ${resultText}`);
+  const parsed = parseExpenseCandidate(text);
+
+  if (!parsed.isCandidate) {
+    await message.reply('not an expense candidate ❌');
+    return;
+  }
+
+  await message.reply(
+    [
+      'expense candidate ✅',
+      `amount token: ${parsed.amountToken ?? 'n/a'}`,
+      `amount: ${parsed.amount ?? 'n/a'}`,
+      `expense_text: ${parsed.expense_text || 'n/a'}`,
+    ].join('\n'),
+  );
 });
 
 client.login(token);

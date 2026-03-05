@@ -1,63 +1,50 @@
-const amountPattern = /(?:\$\s*\d+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?\s*\$|\b\d+(?:[.,]\d{1,2})?\b)/;
+const amountTokenPattern = /(?:\$\s*\d+(?:[.,]\d+)?|\d+(?:[.,]\d+)?\s*\$|\b\d+(?:[.,]\d+)?\b)/;
 
-const expenseHintWords = [
-  'spent',
-  'pay',
-  'paid',
-  'bought',
-  'cost',
-  'uber',
-  'coffee',
-  'groceries',
-  'rent',
-  'food',
-  'lunch',
-  'dinner',
-  'starbucks',
-];
+const fillerWordsPattern = /\b(?:i|im|i['’]m|spent|pay|paid|bought|cost|on|at|for)\b/gi;
 
-const negativeHintWords = [
-  'help',
-  'stats',
-  'limit',
-  'ping',
-  'how',
-  'what',
-  'why',
-];
+function parseExpenseCandidate(messageText) {
+  const originalMessage = String(messageText ?? '');
+  const normalizedMessage = originalMessage.replace(/\s+/g, ' ').trim().toLowerCase();
+
+  const amountMatch = originalMessage.match(amountTokenPattern);
+  const amountToken = amountMatch ? amountMatch[0] : null;
+  const isCandidate = Boolean(amountToken);
+
+  let amount = null;
+  if (amountToken) {
+    const normalizedAmountToken = amountToken
+      .replace(/\$/g, '')
+      .replace(/\s+/g, '')
+      .replace(',', '.');
+
+    const parsedAmount = parseFloat(normalizedAmountToken);
+    amount = Number.isNaN(parsedAmount) ? null : parsedAmount;
+  }
+
+  let expenseText = originalMessage;
+  if (amountToken) {
+    expenseText = expenseText.replace(amountTokenPattern, '');
+  }
+
+  expenseText = expenseText
+    .replace(fillerWordsPattern, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return {
+    isCandidate,
+    amountToken,
+    amount,
+    expense_text: expenseText,
+    normalizedMessage,
+  };
+}
 
 function isExpenseCandidate(messageText) {
-  const text = messageText.trim().toLowerCase();
-
-  if (!text) {
-    return false;
-  }
-
-  if (text.startsWith('/')) {
-    return false;
-  }
-
-  if (text.length < 2) {
-    return false;
-  }
-
-  let score = 0;
-
-  if (amountPattern.test(text)) {
-    score += 2;
-  }
-
-  if (expenseHintWords.some((word) => text.includes(word))) {
-    score += 1;
-  }
-
-  if (negativeHintWords.some((word) => text.includes(word))) {
-    score -= 2;
-  }
-
-  return score >= 2;
+  return parseExpenseCandidate(messageText).isCandidate;
 }
 
 module.exports = {
+  parseExpenseCandidate,
   isExpenseCandidate,
 };
