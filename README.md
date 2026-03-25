@@ -51,6 +51,7 @@ atm/
 ## Prerequisites
 
 - Node.js 18+ (22 recommended)
+- Python 3.14+ via Python Manager (`py` launcher on Windows)
 - Discord app and bot token
 
 ## Environment Variables
@@ -160,6 +161,87 @@ ssh -i "<path-to-private-key>" -L 5555:localhost:5555 <vm-user>@<vm-public-ip>
 - Never commit real tokens to GitHub.
 - `.env` is ignored by `.gitignore`.
 
+## Phase 3A: Dataset Access + Category Taxonomy Lock
+
+Use this phase to lock the category contract before model training.
+
+### 1) Dataset Access (Manual Gate)
+
+- Open: [mitulshah/transaction-categorization](https://huggingface.co/datasets/mitulshah/transaction-categorization)
+- Accept dataset access terms (required by Hugging Face before files are downloadable).
+- Verify you can access dataset files and metadata.
+
+### 2) Canonical Default Categories (Source of Truth)
+
+These are the 10 default bot categories and must remain exact for Phase 3 model output:
+
+1. Food & Dining
+2. Transportation
+3. Shopping & Retail
+4. Entertainment & Recreation
+5. Healthcare & Medical
+6. Utilities & Services
+7. Financial Services
+8. Income
+9. Government & Legal
+10. Charity & Donations
+
+Implementation source:
+
+- `src/constants/defaultCategories.js`
+
+### 3) Label Policy
+
+- Persist and display category labels exactly as listed above.
+- Any model prediction must map to one of these 10 labels or `uncategorized`.
+- Normalization is allowed only for internal matching logic (not for stored/displayed labels).
+
+## Phase 3B: Baseline Training Pipeline (Offline)
+
+This phase builds a first text-classification baseline from `expense_text` to one of the 10 default categories.
+
+### 1) Install ML dependencies
+
+```bash
+npm run ml:install
+```
+
+### 2) Train baseline model
+
+```bash
+npm run ml:train
+```
+
+Notes:
+- Default source is Hugging Face dataset (`mitulshah/transaction-categorization`).
+- Default run samples up to 300k rows for faster iteration.
+- Artifacts are written to `scripts/ml/artifacts/<version>/`.
+
+Optional local parquet training:
+
+```bash
+py -3.14 scripts/ml/train.py --source parquet --parquet-path "path/to/0000.parquet"
+```
+
+### 3) Evaluate saved artifact
+
+```bash
+py -3.14 scripts/ml/evaluate.py --artifact-dir "scripts/ml/artifacts/<version>"
+```
+
+### 4) Predict a single `expense_text`
+
+```bash
+py -3.14 scripts/ml/predict.py --artifact-dir "scripts/ml/artifacts/<version>" --text "uber ride downtown"
+```
+
+### Artifacts produced per run
+
+- `model.joblib`
+- `vectorizer.joblib`
+- `metrics.json`
+- `test_split.parquet`
+
 ## TODO
 
 ### Phase 1: Slash Commands (Foundation)
@@ -179,6 +261,8 @@ ssh -i "<path-to-private-key>" -L 5555:localhost:5555 <vm-user>@<vm-public-ip>
 ### Phase 3: Expense Parser
 - [x] Parse message formats (`12$ starbucks`, `I spent 40 on groceries`, `uber 18`)
 - [x] Choose dataset for category modeling: [mitulshah/transaction-categorization](https://huggingface.co/datasets/mitulshah/transaction-categorization)
+- [x] Lock canonical default category taxonomy (10 categories)
+- [x] Confirm gated dataset access accepted (owner action in browser)
 - [ ] Build training dataset from `expense_text` + dataset category labels
 - [ ] Start with a simple baseline classifier (use dataset categories as-is)
 - [ ] Evaluate on holdout split (accuracy + macro F1) and save model artifacts

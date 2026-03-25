@@ -16,6 +16,7 @@ dist/
 build/
 coverage/
 data/
+scripts/ml/artifacts/
 
 # Runtime/process files
 .pm2/
