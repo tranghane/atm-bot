@@ -320,15 +320,15 @@ Behavior:
 - [x] Choose dataset for category modeling: [mitulshah/transaction-categorization](https://huggingface.co/datasets/mitulshah/transaction-categorization)
 - [x] Lock canonical default category taxonomy (10 categories)
 - [x] Confirm gated dataset access accepted (owner action in browser)
-- [ ] Build training dataset from `expense_text` + dataset category labels
-- [ ] Start with a simple baseline classifier (use dataset categories as-is)
-- [ ] Evaluate on holdout split (accuracy + macro F1) and save model artifacts
+- [x] Use external dataset directly for training (no custom dataset build): [mitulshah/transaction-categorization](https://huggingface.co/datasets/mitulshah/transaction-categorization)
+- [x] Start with a simple baseline classifier (use defalt dataset categories from above dataset)
+- [x] Evaluate on holdout split (accuracy + macro F1) and save model artifacts
 - [x] Add confusion matrix + evaluation report artifacts
 - [x] Add model quality gate script (pass/fail by thresholds)
-- [ ] Add inference helper: `categorizeExpenseText(expenseText)`
-- [ ] Wire parser flow to call classifier and return predicted category + confidence
-- [ ] Add fallback behavior when confidence is low (`uncategorized`)
-- [ ] Log prediction outcomes to prepare future fine-tuning
+- [x] Add inference helper: `mlRuntimeService(expenseText)`
+- [x] Wire parser flow to call classifier and return predicted category + confidence
+- [x] Add fallback behavior when confidence is low (`uncategorized`)
+- [x] Log prediction outcomes to prepare future fine-tuning
 
 ### Phase 4: AI Category Classification
 - [ ] Integrate LLM for category suggestions
