@@ -229,11 +229,42 @@ py -3.14 scripts/ml/train.py --source parquet --parquet-path "path/to/0000.parqu
 py -3.14 scripts/ml/evaluate.py --artifact-dir "scripts/ml/artifacts/<version>"
 ```
 
+This also writes:
+- `evaluation_report.json`
+- `confusion_matrix.csv`
+
 ### 4) Predict a single `expense_text`
 
 ```bash
 py -3.14 scripts/ml/predict.py --artifact-dir "scripts/ml/artifacts/<version>" --text "uber ride downtown"
 ```
+
+### 5) Apply Phase 3C quality gate
+
+```bash
+py -3.14 scripts/ml/quality_gate.py --artifact-dir "scripts/ml/artifacts/<version>"
+```
+
+Default gate thresholds:
+- `min_accuracy = 0.95`
+- `min_macro_f1 = 0.95`
+- `min_recall = 0.90` (per-category recall floor)
+
+Quality gate output:
+- `quality_gate.json`
+- exit code `0` on pass, `1` on fail
+
+### 6) Run Phase 3C end-to-end (latest artifact)
+
+```bash
+npm run ml:evaluate-current-model
+```
+
+What this does:
+- Automatically selects the latest directory under `scripts/ml/artifacts/`
+- Runs `evaluate.py`
+- Runs `quality_gate.py`
+- Prints final pass/fail summary
 
 ### Artifacts produced per run
 
@@ -241,6 +272,9 @@ py -3.14 scripts/ml/predict.py --artifact-dir "scripts/ml/artifacts/<version>" -
 - `vectorizer.joblib`
 - `metrics.json`
 - `test_split.parquet`
+- `evaluation_report.json`
+- `confusion_matrix.csv`
+- `quality_gate.json` (after Phase 3C gate run)
 
 ## TODO
 
@@ -266,6 +300,8 @@ py -3.14 scripts/ml/predict.py --artifact-dir "scripts/ml/artifacts/<version>" -
 - [ ] Build training dataset from `expense_text` + dataset category labels
 - [ ] Start with a simple baseline classifier (use dataset categories as-is)
 - [ ] Evaluate on holdout split (accuracy + macro F1) and save model artifacts
+- [x] Add confusion matrix + evaluation report artifacts
+- [x] Add model quality gate script (pass/fail by thresholds)
 - [ ] Add inference helper: `categorizeExpenseText(expenseText)`
 - [ ] Wire parser flow to call classifier and return predicted category + confidence
 - [ ] Add fallback behavior when confidence is low (`uncategorized`)

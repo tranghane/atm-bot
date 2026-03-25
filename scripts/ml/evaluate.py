@@ -5,13 +5,15 @@ import os
 
 import joblib
 import pandas as pd
-from sklearn.metrics import accuracy_score, classification_report, f1_score
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate saved model on a parquet split")
     parser.add_argument("--artifact-dir", required=True)
     parser.add_argument("--input-parquet", default=None)
+    parser.add_argument("--output-json", default=None)
+    parser.add_argument("--confusion-matrix-csv", default=None)
     args = parser.parse_args()
 
     vectorizer_path = os.path.join(args.artifact_dir, "vectorizer.joblib")
@@ -38,6 +40,15 @@ def main() -> None:
     x_vec = vectorizer.transform(x)
     y_pred = model.predict(x_vec)
 
+    labels = sorted(set(y_true.tolist()) | set(y_pred.tolist()))
+    matrix = confusion_matrix(y_true, y_pred, labels=labels)
+    matrix_rows = []
+    for i, true_label in enumerate(labels):
+        row = {"true_label": true_label}
+        for j, pred_label in enumerate(labels):
+            row[pred_label] = int(matrix[i, j])
+        matrix_rows.append(row)
+
     accuracy = accuracy_score(y_true, y_pred)
     macro_f1 = f1_score(y_true, y_pred, average="macro")
     report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
@@ -48,8 +59,19 @@ def main() -> None:
         "rows": int(len(frame)),
         "accuracy": float(accuracy),
         "macro_f1": float(macro_f1),
+        "labels": labels,
         "classification_report": report,
+        "confusion_matrix": matrix.tolist(),
+        "confusion_matrix_labels": labels,
     }
+
+    output_json_path = args.output_json or os.path.join(args.artifact_dir, "evaluation_report.json")
+    confusion_csv_path = args.confusion_matrix_csv or os.path.join(args.artifact_dir, "confusion_matrix.csv")
+
+    with open(output_json_path, "w", encoding="utf-8") as f:
+        json.dump(output, f, indent=2)
+
+    pd.DataFrame(matrix_rows).to_csv(confusion_csv_path, index=False)
 
     print(json.dumps(output, indent=2))
 
