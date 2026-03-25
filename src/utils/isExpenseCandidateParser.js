@@ -1,7 +1,5 @@
 const amountTokenPattern = /(?:\$\s*\d+(?:[.,]\d+)?|\d+(?:[.,]\d+)?\s*\$|\b\d+(?:[.,]\d+)?\b)/;
 
-const fillerWordsPattern = /\b(?:i|im|i['’]m|spent|pay|paid|bought|cost|on|at|for)\b/gi;
-
 function parseExpenseCandidate(messageText) {
   const originalMessage = String(messageText ?? '');
   const normalizedMessage = originalMessage.replace(/\s+/g, ' ').trim().toLowerCase();
@@ -27,7 +25,6 @@ function parseExpenseCandidate(messageText) {
   }
 
   expenseText = expenseText
-    .replace(fillerWordsPattern, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 

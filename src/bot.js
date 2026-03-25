@@ -1,12 +1,8 @@
 require('dotenv').config();
-const path = require('node:path');
-const { promisify } = require('node:util');
-const { execFile } = require('node:child_process');
 const { Client, GatewayIntentBits } = require('discord.js');
 const { loadCommands } = require('./utils/commandLoader');
-const { parseExpenseCandidate } = require('./parsers/isExpenseCandidate');
-
-const execFileAsync = promisify(execFile);
+const { parseExpenseCandidate } = require('./utils/isExpenseCandidateParser');
+const { predictCategory } = require('./services/mlRuntimeService');
 
 const allowedExpenseChannelIds = new Set(
   (process.env.DISCORD_EXPENSE_CHANNEL_IDS || '')
@@ -19,88 +15,6 @@ function isAllowedExpenseChannel(channelId) {
   if (!channelId) return false;
   if (allowedExpenseChannelIds.size === 0) return true;
   return allowedExpenseChannelIds.has(channelId);
-}
-
-const autoCategoryEnabled = String(process.env.ML_ENABLE_AUTO_CATEGORY || 'false').toLowerCase() === 'true';
-const minCategoryConfidence = Number(process.env.ML_MIN_CONFIDENCE || '0.9');
-const mlArtifactDir = process.env.ML_ARTIFACT_DIR || '';
-const mlPredictCommand = process.env.ML_PREDICT_COMMAND || (process.platform === 'win32' ? 'py' : 'python3');
-const mlPredictCommandArgs = (process.env.ML_PREDICT_COMMAND_ARGS || (process.platform === 'win32' ? '-3.14' : ''))
-  .split(/\s+/)
-  .filter(Boolean);
-const mlPredictScriptPath = path.resolve(__dirname, '..', 'scripts', 'ml', 'predict.py');
-
-async function predictCategoryFromExpenseText(expenseText) {
-  if (!autoCategoryEnabled) {
-    return {
-      predictedCategory: null,
-      confidence: null,
-      finalCategory: 'uncategorized',
-      fallbackReason: 'auto_category_disabled',
-    };
-  }
-
-  if (!mlArtifactDir) {
-    return {
-      predictedCategory: null,
-      confidence: null,
-      finalCategory: 'uncategorized',
-      fallbackReason: 'missing_artifact_dir',
-    };
-  }
-
-  const commandArgs = [
-    ...mlPredictCommandArgs,
-    mlPredictScriptPath,
-    '--artifact-dir',
-    mlArtifactDir,
-    '--text',
-    expenseText,
-  ];
-
-  try {
-    const { stdout } = await execFileAsync(mlPredictCommand, commandArgs, {
-      timeout: 10000,
-      maxBuffer: 1024 * 1024,
-    });
-
-    const parsed = JSON.parse(stdout.trim());
-    const predictedCategory = typeof parsed.predicted_category === 'string' ? parsed.predicted_category : null;
-    const confidence = typeof parsed.confidence === 'number' ? parsed.confidence : null;
-
-    if (!predictedCategory) {
-      return {
-        predictedCategory: null,
-        confidence,
-        finalCategory: 'uncategorized',
-        fallbackReason: 'invalid_prediction_output',
-      };
-    }
-
-    if (confidence === null || confidence < minCategoryConfidence) {
-      return {
-        predictedCategory,
-        confidence,
-        finalCategory: 'uncategorized',
-        fallbackReason: 'low_confidence',
-      };
-    }
-
-    return {
-      predictedCategory,
-      confidence,
-      finalCategory: predictedCategory,
-      fallbackReason: null,
-    };
-  } catch (error) {
-    console.error('Category prediction failed:', error.message);
-    return {
-      predictedCategory: null,
-      confidence: null,
-      finalCategory: 'uncategorized',
-      fallbackReason: 'prediction_error',
-    };
-  }
 }
 
 const token = process.env.DISCORD_TOKEN;
@@ -162,7 +76,7 @@ client.on('messageCreate', async (message) => {
     return;
   }
 
-  const classification = await predictCategoryFromExpenseText(parsed.expense_text || '');
+  const classification = await predictCategory(parsed.expense_text || '');
 
   console.log(
     JSON.stringify({
