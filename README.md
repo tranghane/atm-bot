@@ -70,6 +70,10 @@ Notes:
 - `DISCORD_TEST_SERVER_ID` is optional but recommended during development for instant slash command updates.
 - If `DISCORD_TEST_SERVER_ID` is omitted, commands are registered globally (can take longer to appear).
 - `DISCORD_EXPENSE_CHANNEL_IDS` controls which channels are monitored for expense-text intake (comma-separated channel IDs).
+- `ML_ENABLE_AUTO_CATEGORY` toggles runtime category prediction from `expense_text`.
+- `ML_ARTIFACT_DIR` points to a trained artifact folder (for example `scripts/ml/artifacts/v20260325-040336`).
+- `ML_MIN_CONFIDENCE` controls fallback to `uncategorized` when prediction confidence is too low.
+- `ML_PREDICT_COMMAND` and `ML_PREDICT_COMMAND_ARGS` define how Node calls the Python predictor script.
 
 ## Local Development
 
@@ -265,6 +269,25 @@ What this does:
 - Runs `evaluate.py`
 - Runs `quality_gate.py`
 - Prints final pass/fail summary
+
+## Runtime Auto-Categorization (Phase 3 integration)
+
+Auto-categorization is disabled by default.
+
+Enable in `.env`:
+
+```env
+ML_ENABLE_AUTO_CATEGORY=true
+ML_ARTIFACT_DIR=scripts/ml/artifacts/v20260325-040336
+ML_MIN_CONFIDENCE=0.90
+ML_PREDICT_COMMAND=py
+ML_PREDICT_COMMAND_ARGS=-3.14
+```
+
+Behavior:
+- Bot parses `expense_text` from message intake.
+- Bot calls `scripts/ml/predict.py` for predicted category + confidence.
+- If confidence is below `ML_MIN_CONFIDENCE` (or prediction fails), final category becomes `uncategorized`.
 
 ### Artifacts produced per run
 
