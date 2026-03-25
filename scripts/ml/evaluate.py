@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# Evaluate a saved model artifact, then export metrics and a confusion matrix.
 import argparse
 import json
 import os

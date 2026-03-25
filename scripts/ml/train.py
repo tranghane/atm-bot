@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#Train the baseline expense-text category model and write versioned artifacts.
 import argparse
 import json
 import os

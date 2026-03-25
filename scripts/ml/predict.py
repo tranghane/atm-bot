@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# Run single-text inference with a saved model artifact and return category + confidence.
 import argparse
 import json
 import os

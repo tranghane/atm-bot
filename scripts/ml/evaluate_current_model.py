@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# Run the full evaluation on the current model (evaluate then apply quality gate).
 import argparse
 import json
 import os

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# Enforce pass/fail quality thresholds on evaluation output for model promotion decisions.
 import argparse
 import json
 import os
